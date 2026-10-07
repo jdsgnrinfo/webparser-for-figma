@@ -3286,12 +3286,7 @@
 
   // src/lib/pipeline.ts
   var LOG_PREFIX = "[WebParser for Figma]";
-  var SUBMIT_TIMEOUT = 6e4;
   var ERROR_MESSAGES = {
-    CAPTURE_EXPIRED: "Capture expired. Please start a new capture.",
-    CAPTURE_NOT_FOUND: "Capture not found. Please start a new capture.",
-    ACCESS_DENIED: "Access denied. Please try again.",
-    CAPTURE_ID_ALREADY_SUBMITTED: "Capture already submitted. Please start a new capture.",
     PAGE_NOT_RESPONDING: "Capture timed out. Try keeping this tab in the foreground.",
     VIDEO_TIMEOUT: "Request timed out. Please try again."
   };
@@ -3369,60 +3364,6 @@
     logger.log(`Payload size: ${sizeKB} KB`);
     return json;
   }
-  async function submitCapture(json, captureId, endpoint, captureIndex = 0) {
-    logger.log("Sending captures to Figma...");
-    const sizeKB = Math.round(json.length / 1024);
-    logger.log(`Sending capture, total size: ${sizeKB} KB`);
-    const url = endpoint.replace(
-      /\/capture\/[^/]+\/submit/,
-      `/capture/${captureId}/submit`
-    );
-    const abortController = new AbortController();
-    const timer = setTimeout(() => abortController.abort(), SUBMIT_TIMEOUT);
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          captureId,
-          payload: json,
-          captureIndex
-        }),
-        signal: abortController.signal
-      });
-      clearTimeout(timer);
-      if (!response.ok) {
-        let message;
-        try {
-          const body = await response.json();
-          if (body.errorCode) {
-            message = ERROR_MESSAGES[body.errorCode] || body.errorCode;
-          } else {
-            message = body.error || response.statusText;
-          }
-        } catch (_parseErr) {
-          message = await response.text().catch(() => response.statusText);
-        }
-        logger.error(`Server error (${response.status}): ${message}`);
-        throw new Error(message);
-      }
-      const data = await response.json();
-      if (data.error) {
-        logger.error("Capture failed:", data.error);
-        throw new Error(data.error);
-      }
-      logger.log("Success! Page has been captured and sent to Figma.");
-      const claimUrl = data.claimUrl || data.fileUrl;
-      if (claimUrl) logger.log(`Open your file: ${claimUrl}`);
-      return { claimUrl, nextCaptureId: data.nextCaptureId };
-    } catch (err) {
-      clearTimeout(timer);
-      if (err instanceof Error && err.name === "AbortError") {
-        throw new Error(`Request timed out after ${SUBMIT_TIMEOUT / 1e3} seconds`);
-      }
-      throw err;
-    }
-  }
   async function waitForFocus() {
     if (!document.hasFocus()) {
       logger.log("Document not focused, waiting for focus...");
@@ -3444,80 +3385,14 @@
     }
   }
 
-  // src/lib/config.ts
-  var ALLOWED_FIGMA_DOMAINS = [
-    "figma.com",
-    "www.figma.com",
-    "api.figma.com",
-    "mcp.figma.com",
-    "local.figma.engineering",
-    "mcp.local.figma.engineering",
-    "figdev.systems",
-    "localhost"
-  ];
-  function isValidFigmaEndpoint(url) {
-    try {
-      const hostname = new URL(url).hostname;
-      return ALLOWED_FIGMA_DOMAINS.some(
-        (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
-      );
-    } catch {
-      return false;
-    }
-  }
-  function parseHashParams() {
-    const hash = window.location.hash;
-    if (!hash.startsWith("#figmacapture")) {
-      return { shouldCapture: false };
-    }
-    const parts = hash.slice(1).split("&");
-    let captureId;
-    let endpoint;
-    let delay;
-    let selector;
-    let logPayload;
-    let logVerbose;
-    for (const part of parts) {
-      const [key, value] = part.split("=");
-      if (key === "figmacapture" && value) {
-        captureId = decodeURIComponent(value);
-      } else if (key === "figmaendpoint" && value) {
-        endpoint = decodeURIComponent(value);
-      } else if (key === "figmadelay" && value) {
-        const parsed = parseInt(decodeURIComponent(value), 10);
-        if (!isNaN(parsed) && parsed >= 0) {
-          delay = parsed;
-        }
-      } else if (key === "figmaselector" && value) {
-        selector = decodeURIComponent(value);
-      } else if (key === "figmalogpayload") {
-        logPayload = value !== "false";
-      } else if (key === "figmalogverbose") {
-        logVerbose = value !== "false";
-      }
-    }
-    return {
-      shouldCapture: true,
-      captureId,
-      endpoint,
-      delay,
-      selector,
-      logPayload,
-      logVerbose
-    };
-  }
-
   // src/lib/api.ts
   if (typeof window !== "undefined") {
     if (!window.figma) {
       window.figma = {};
     }
     window.figma.capturePage = capturePage;
-    window.figma.submitCapture = submitCapture;
     window.figma.writeToClipboard = writeToClipboard;
     window.figma.wrapForClipboard = wrapForClipboard;
-    window.figma.isValidFigmaEndpoint = isValidFigmaEndpoint;
-    window.figma.parseHashParams = parseHashParams;
     window.figma.setVerbose = (enabled) => {
       logger.verbose = !!enabled;
     };

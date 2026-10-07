@@ -18,41 +18,25 @@
     style.textContent = `
       :host {
         all: initial;
-        --bg: #1c1c1e;
-        --pill-bg: #2c2c2e;
-        --btn-hover: #3a3a3c;
-        --accent: #0d99ff;
-        --danger: #ff3b30;
-        --success: #30d158;
-        --warning: #ff9f0a;
-        --info: #8e8e93;
-        --text: rgba(255,255,255,0.9);
-        --text-muted: rgba(255,255,255,0.5);
+        --unit-top: #2A2B27;
+        --unit-bottom: #222320;
+        --key-top: #34352F;
+        --key-bottom: #2B2C28;
+        --key-hover-top: #3A3B35;
+        --key-hover-bottom: #30312C;
+        --well: #191A17;
+        --ink: #E4E5DE;
+        --ink-soft: #D8D9D2;
+        --ink-muted: #8E9087;
+        --lime: #C9F35B;
+        --accent: #F2551C;
+        --accent-top: #FF6B33;
+        --error-ink: #FF9B73;
+        --mono: "Space Mono", ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+        --highlight: inset 0 0.5px 0 rgba(255,255,255,0.08);
       }
 
-      /* ─── Inner stroke utility ─── */
-      .inner-stroke {
-        position: relative;
-      }
-      .inner-stroke::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        padding: 1px;
-        background: linear-gradient(180deg, #424242 0%, #0F0F0F 100%);
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        pointer-events: none;
-        z-index: 1;
-      }
-      .inner-stroke > * {
-        position: relative;
-        z-index: 2;
-      }
-
-      /* ─── Panel ─── */
+      /* ─── Panel (graphite unit, no strokes, top-edge highlight) ─── */
       .panel {
         position: fixed;
         top: 16px;
@@ -61,54 +45,114 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 6px;
-        background: var(--bg);
-        border-radius: 16px;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.5);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-        font-size: 13px;
-        font-weight: 500;
+        padding: 8px;
+        background: linear-gradient(180deg, var(--unit-top) 0%, var(--unit-bottom) 100%);
+        border-radius: 14px;
+        box-shadow: var(--highlight), 0 14px 30px -14px rgba(0,0,0,0.9), 0 2px 6px rgba(0,0,0,0.35);
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
         z-index: 2147483647;
         user-select: none;
-        cursor: grab;
         opacity: 0;
-        transform: translateX(-50%) scale(0.85) translateY(-10px);
-        animation: panelEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        transform: translateX(-50%) scale(0.92) translateY(-8px);
+        animation: panelEnter 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
         will-change: transform, opacity;
       }
-      .panel:active { cursor: grabbing; }
+      /* ─── Bottom tab with the grab pill (the only drag handle) ─── */
+      .grip-tab {
+        position: absolute;
+        top: calc(100% - 1px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 72px;
+        height: 16px;
+        border-radius: 0 0 10px 10px;
+        background: var(--unit-bottom);
+        box-shadow: 0 10px 18px -12px rgba(0,0,0,0.9);
+      }
+      .grip-tab::before,
+      .grip-tab::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        pointer-events: none;
+      }
+      .grip-tab::before { left: -10px; background: radial-gradient(circle at 0 100%, transparent 10px, var(--unit-bottom) 10.5px); }
+      .grip-tab::after { right: -10px; background: radial-gradient(circle at 100% 100%, transparent 10px, var(--unit-bottom) 10.5px); }
+      .grip {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .grip i {
+        display: block;
+        width: 30px;
+        height: 4px;
+        margin-bottom: 2px;
+        border-radius: 99px;
+        background: rgba(228,229,222,0.28);
+        transition: width 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+      }
+      .grip:hover i { width: 44px; background: rgba(228,229,222,0.55); }
+      .grip.grabbing { cursor: grabbing; }
+      .grip.grabbing i { width: 44px; background: var(--lime); box-shadow: 0 0 8px rgba(201,243,91,0.55); }
+      .grip:focus-visible { outline: none; }
+      .grip:focus-visible i { background: var(--lime); }
+      .panel.dragged.exiting { animation: panelExitFree 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+      @keyframes panelExitFree {
+        0%   { opacity: 1; transform: scale(1) translateY(0); }
+        100% { opacity: 0; transform: scale(0.94) translateY(-6px); }
+      }
 
       .panel.exiting {
-        animation: panelExit 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: panelExit 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         pointer-events: none;
       }
 
       @keyframes panelEnter {
-        0%   { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(-10px); }
+        0%   { opacity: 0; transform: translateX(-50%) scale(0.92) translateY(-8px); }
         100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
       }
       @keyframes panelExit {
         0%   { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
-        100% { opacity: 0; transform: translateX(-50%) scale(0.9) translateY(-8px); }
+        100% { opacity: 0; transform: translateX(-50%) scale(0.94) translateY(-6px); }
       }
 
-      /* ─── Logo ─── */
+      /* ─── Logo (recessed well) ─── */
       .logo-wrap {
-        width: 32px;
-        height: 32px;
-        margin-left: 8px;
-        margin-right: 4px;
+        position: relative;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.12s ease;
+        width: 44px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        overflow: hidden;
-        border-radius: 10px;
-        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border-radius: 9px;
+        background: var(--well);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.6);
       }
+      .logo-wrap:hover { background: #1E1F1B; }
+      .logo-wrap:hover svg path { fill: #FFFFFF; }
+      .logo-wrap:focus-visible { outline: 1px solid var(--lime); outline-offset: 2px; }
+      .logo-wrap svg path { transition: fill 0.12s ease; }
       .logo-wrap svg {
-        width: 100%;
-        height: 100%;
+        width: 22px;
+        height: 22px;
         display: block;
       }
 
@@ -116,373 +160,313 @@
       .controls {
         display: flex;
         align-items: center;
-        gap: 2px;
-        padding: 4px;
-        background: var(--pill-bg);
-        border-radius: 12px;
+        gap: 8px;
+        margin-left: 6px;
       }
+      .tool-btn.close-btn { margin-left: 6px; }
 
-      /* ─── Buttons (iOS tactile) ─── */
+      /* ─── Keys ─── */
       .tool-btn {
-        width: 42px;
-        height: 42px;
-        border: none;
-        border-radius: 8px;
-        background: transparent;
-        color: var(--text-muted);
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 9px;
+        padding: 0;
+        background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+        color: var(--ink-soft);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    background-color 0.25s ease,
-                    color 0.25s ease;
-        position: relative;
+        box-shadow: var(--highlight), 0 2px 4px -2px rgba(0,0,0,0.6);
+        transition: transform 0.07s ease, box-shadow 0.07s ease, background 0.12s ease, color 0.12s ease;
         flex-shrink: 0;
         -webkit-tap-highlight-color: transparent;
       }
+      .tool-btn:hover { z-index: 4; }
       .tool-btn svg {
-        width: 16px;
-        height: 16px;
-        fill: currentColor;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        width: 20px;
+        height: 20px;
         pointer-events: none;
       }
-
       .tool-btn:hover {
-        background: var(--btn-hover);
-        color: var(--text);
-        transform: scale(1.06);
+        background: linear-gradient(180deg, var(--key-hover-top), var(--key-hover-bottom));
+        color: var(--ink);
       }
-      .tool-btn:hover svg {
-        transform: scale(1.1);
-      }
-
       .tool-btn:active {
-        transform: scale(0.88);
-        transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(1px);
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
       }
 
-      .tool-btn.active {
-        background: var(--accent);
+      /* Primary key: full-page capture */
+      .tool-btn.primary {
         color: #fff;
-        box-shadow: 0 0 0 1px rgba(13,153,255,0.3),
-                    0 4px 14px rgba(13,153,255,0.25);
-        transform: scale(1);
+        background: linear-gradient(180deg, var(--accent-top), var(--accent));
+        box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.3), 0 2px 4px -2px rgba(0,0,0,0.6);
+      }
+      .tool-btn.primary:hover {
+        background: linear-gradient(180deg, #FF7A47, #F4612C);
+        color: #fff;
+      }
+
+      /* Latched key: element selection on */
+      .tool-btn.active {
+        color: var(--lime);
+        background: #151612;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.7);
+        transform: translateY(1px);
       }
       .tool-btn.active:hover {
-        background: #1a8cff;
-        transform: scale(1.04);
-      }
-      .tool-btn.active:active {
-        transform: scale(0.92);
+        background: #181915;
+        color: var(--lime);
       }
 
-      .tool-btn.close-btn:hover {
-        background: var(--danger);
-        color: #fff;
-        box-shadow: 0 4px 14px rgba(255,59,48,0.25);
-      }
+      .tool-btn.close-btn { color: var(--ink-muted); }
+      .tool-btn.close-btn:hover { color: var(--ink); }
 
+      /* Busy: keys stay pressed while a capture runs */
       .tool-btn.disabled {
-        opacity: 0.4;
         pointer-events: none;
-        filter: grayscale(100%);
-        transform: scale(1) !important;
+        transform: translateY(1px);
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        opacity: 0.85;
       }
 
-      /* Tooltip */
-      .tool-btn::after {
+      /* Tooltip: same surface as the toolbar */
+      .tool-btn::after,
+      .logo-wrap::after {
         content: attr(data-tooltip);
         position: absolute;
         top: calc(100% + 10px);
         left: 50%;
-        transform: translateX(-50%) scale(0.9);
-        background: rgba(30,30,30,0.92);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        color: #fff;
-        padding: 6px 12px;
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: 500;
+        transform: translateX(-50%) translateY(-3px);
+        padding: 7px 10px;
+        border-radius: 9px;
+        background: linear-gradient(180deg, var(--unit-top), var(--unit-bottom));
+        box-shadow: var(--highlight), 0 12px 26px -12px rgba(0,0,0,0.9), 0 2px 6px rgba(0,0,0,0.35);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
         white-space: nowrap;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        z-index: 1;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        transition: opacity 0.15s ease 0.2s, transform 0.2s ease 0.2s;
+        z-index: 5;
       }
-      .tool-btn:hover::after {
+      .tool-btn:hover::after,
+      .logo-wrap:hover::after {
         opacity: 1;
-        transform: translateX(-50%) scale(1);
+        transform: translateX(-50%) translateY(0);
       }
 
-      /* ─── Toast (iOS notification style) ─── */
+      /* ─── Status toast: icon · text · divider · action ─── */
       .toast {
         position: absolute;
-        top: calc(100% + 14px);
+        top: calc(100% + 24px);
         left: 50%;
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 12px 16px;
-        background: rgba(28,28,30,0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-radius: 14px;
-        box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+        height: 40px;
+        padding: 0 6px;
+        box-sizing: border-box;
+        background: var(--unit-bottom);
+        border-radius: 12px;
+        box-shadow: inset 0 0.5px 0 rgba(255,255,255,0.07), 0 12px 26px -14px rgba(0,0,0,0.9), 0 2px 6px rgba(0,0,0,0.3);
         opacity: 0;
         pointer-events: none;
-        transform: translateX(-50%) translateY(12px) scale(0.92);
-        transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif;
-        font-size: 13px;
-        font-weight: 500;
-        color: #fff;
+        transform: translateX(-50%) translateY(-4px);
+        transition: opacity 0.22s ease, transform 0.22s ease-out;
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
         white-space: nowrap;
-        z-index: 2147483646;
+        z-index: 1;
         will-change: transform, opacity;
       }
       .toast.visible {
         opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
+        transform: translateX(-50%) translateY(0);
         pointer-events: auto;
       }
 
-      /* ─── Toast Icon ─── */
       .toast-icon {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        opacity: 0;
-        transform: scale(0.5) rotate(-12deg);
-        transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1) 0ms,
-                    transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0ms;
+        background: #151612;
+        color: var(--lime);
       }
-      .toast.visible .toast-icon {
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
+      .toast-icon svg { width: 16px; height: 16px; display: block; }
+      .toast-icon.error { background: var(--accent); color: #fff; }
+      .toast-icon.select { color: #fff; }
+      .toast-icon.idle { color: var(--ink-muted); }
+
+      /* Animated state icons */
+      .toast-icon .spin { animation: wpSpin 0.8s linear infinite; }
+      .toast-icon .draw path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: wpDraw 0.35s ease-out forwards; }
+      .toast-icon .shake { animation: wpShake 0.45s ease-in-out; }
+      .toast-icon .pulse { animation: wpPulse 1.2s ease-in-out infinite; }
+      @keyframes wpSpin { to { transform: rotate(360deg); } }
+      @keyframes wpDraw { to { stroke-dashoffset: 0; } }
+      @keyframes wpShake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-3px); }
+        40% { transform: translateX(3px); }
+        60% { transform: translateX(-2px); }
+        80% { transform: translateX(2px); }
+      }
+      @keyframes wpPulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(0.82); opacity: 0.6; }
       }
 
-      /* iOS-style spinner for processing states */
-      .toast-icon .spinner {
-        width: 14px;
-        height: 14px;
-        animation: spinnerRotate 0.8s linear infinite;
-      }
-      .toast-icon .spinner-track {
-        fill: none;
-        stroke: rgba(142, 142, 147, 0.2);
-        stroke-width: 2;
-      }
-      .toast-icon .spinner-head {
-        fill: none;
-        stroke: var(--info);
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-dasharray: 20 40;
-        animation: spinnerDash 1.5s ease-in-out infinite;
-      }
-
-      @keyframes spinnerRotate {
-        0%   { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      @keyframes spinnerDash {
-        0%   { stroke-dasharray: 1 40; stroke-dashoffset: 0; }
-        50%  { stroke-dasharray: 15 40; stroke-dashoffset: -7; }
-        100% { stroke-dasharray: 1 40; stroke-dashoffset: -20; }
-      }
-
-      .toast-icon.success { background: rgba(48, 209, 88, 0.15); color: var(--success); }
-      .toast-icon.error   { background: rgba(255, 159, 10, 0.15); color: var(--warning); }
-      .toast-icon.info    { background: rgba(142, 142, 147, 0.15); color: var(--info); }
-
-      .toast-icon svg {
-        width: 12px;
-        height: 12px;
-        fill: currentColor;
-      }
-
-      /* ─── Toast Text ─── */
       .toast-text {
+        padding-right: 8px;
         line-height: 1.4;
-        opacity: 0;
-        transform: translateX(8px);
-        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) 60ms,
-                    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 60ms;
+        transition: opacity 0.15s ease, transform 0.15s ease;
       }
-      .toast.visible .toast-text {
-        opacity: 1;
-        transform: translateX(0);
-      }
-
-      /* Soft text transition for same-type state changes */
+      .toast.is-error .toast-text { color: var(--error-ink); }
       .toast-text.changing {
         opacity: 0;
         transform: translateY(3px);
-        transition: opacity 0.15s ease,
-                    transform 0.2s ease;
       }
 
-      /* ─── Toast Divider ─── */
+      /* No strokes: the divider is only spacing */
       .toast-divider {
-        width: 1px;
-        height: 18px;
-        background: rgba(255,255,255,0.12);
-        margin: 0 4px;
-        opacity: 0;
-        transition: opacity 0.25s ease 120ms;
-      }
-      .toast.visible .toast-divider {
-        opacity: 1;
+        width: 0;
+        height: 22px;
+        margin: 0 -2px;
       }
 
-      /* ─── Toast Action ─── */
       .toast-action {
         display: inline-flex;
         align-items: center;
-        padding: 4px 10px;
-        border: none;
-        border-radius: 8px;
-        background: rgba(255,255,255,0.08);
-        color: #fff;
-        font: inherit;
-        font-size: 12px;
-        font-weight: 600;
+        height: 28px;
+        padding: 0 10px;
+        border: 0;
+        border-radius: 7px;
+        background: linear-gradient(180deg, var(--key-top), var(--key-bottom));
+        box-shadow: var(--highlight);
+        color: var(--ink);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
         cursor: pointer;
-        opacity: 0;
-        transform: scale(0.9);
-        transition: opacity 0.25s ease 140ms,
-                    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 140ms,
-                    background-color 0.2s ease;
         white-space: nowrap;
+        transition: background 0.12s ease, transform 0.07s ease;
       }
-      .toast.visible .toast-action {
-        opacity: 1;
-        transform: scale(1);
-      }
-      .toast-action:hover {
-        background: rgba(255,255,255,0.15);
-        transform: scale(1.05);
-      }
-      .toast-action:active {
-        transform: scale(0.92);
-        transition: transform 0.08s ease;
-      }
-      .toast-action.danger {
-        color: var(--danger);
-        background: rgba(255,59,48,0.15);
-      }
-      .toast-action.danger:hover {
-        background: rgba(255,59,48,0.25);
-      }
+      .toast-action:hover { background: linear-gradient(180deg, var(--key-hover-top), var(--key-hover-bottom)); }
+      .toast-action:active { transform: translateY(1px); box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); }
+      .toast-action.danger { color: var(--error-ink); }
 
-      /* ─── Selection Highlight (iOS focus) ─── */
+      /* ─── Selection highlight ─── */
       .highlight {
         position: fixed;
         pointer-events: none;
-        border: 2.5px solid var(--accent);
+        border: 1.5px solid var(--accent);
         border-radius: 6px;
-        background: rgba(13, 153, 255, 0.12);
+        background: rgba(242, 85, 28, 0.1);
         z-index: 2147483646;
-        box-shadow: 0 0 0 9999px rgba(0,0,0,0.15);
+        box-shadow: 0 0 0 9999px rgba(0,0,0,0.18);
         opacity: 0;
-        transform: scale(0.98);
-        transition: top 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-                    left 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-                    width 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-                    height 0.15s cubic-bezier(0.4, 0, 0.2, 1),
-                    opacity 0.2s ease,
-                    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        will-change: transform, opacity, top, left, width, height;
+        transition: top 0.12s ease, left 0.12s ease, width 0.12s ease, height 0.12s ease, opacity 0.15s ease;
+        will-change: opacity, top, left, width, height;
       }
       .highlight.visible {
         opacity: 1;
-        transform: scale(1);
       }
     `;
     shadow.appendChild(style);
 
     const SVG_NS = "http://www.w3.org/2000/svg";
 
-    function makeSvg(size, viewBox, pathData, color) {
-      const svg = document.createElementNS(SVG_NS, "svg");
-      svg.setAttribute("width", String(size));
-      svg.setAttribute("height", String(size));
-      svg.setAttribute("viewBox", viewBox);
-      for (const d of pathData) {
-        const p = document.createElementNS(SVG_NS, "path");
-        p.setAttribute("d", d);
-        p.setAttribute("fill", color || "currentColor");
-        svg.appendChild(p);
-      }
+    function svgEl(tag, attrs) {
+      const node = document.createElementNS(SVG_NS, tag);
+      for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+      return node;
+    }
+    function makeIcon(viewBox, parts, className) {
+      const svg = svgEl("svg", { viewBox, fill: "none", stroke: "currentColor", "stroke-linecap": "round", "stroke-linejoin": "round" });
+      if (className) svg.setAttribute("class", className);
+      for (const [tag, attrs] of parts) svg.appendChild(svgEl(tag, attrs));
       return svg;
     }
-
+    const keyIcons = {
+      screen: () => makeIcon("0 0 24 24", [
+        ["rect", { x: 3, y: 4, width: 18, height: 12, rx: 1.5, "stroke-width": 1.3 }],
+        ["path", { d: "M8 20h8M12 16v4", "stroke-width": 1.3 }]
+      ]),
+      select: () => makeIcon("0 0 24 24", [
+        ["path", { d: "M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4", "stroke-width": 1.3 }],
+        ["path", { d: "M10 10l6 2.5-2.5 1-1 2.5z", "stroke-width": 1.3 }]
+      ]),
+      close: () => makeIcon("0 0 24 24", [
+        ["path", { d: "M6 6l12 12M18 6L6 18", "stroke-width": 1.5 }]
+      ])
+    };
+    // Animated state icons for the status toast
+    const toastIconBuilders = {
+      info: () => makeIcon("0 0 16 16", [
+        ["circle", { cx: 8, cy: 8, r: 6, "stroke-opacity": 0.25, "stroke-width": 1.4 }],
+        ["path", { d: "M8 2a6 6 0 0 1 6 6", "stroke-width": 1.4 }]
+      ], "spin"),
+      success: () => makeIcon("0 0 16 16", [
+        ["path", { d: "M3.5 8.5l3 3 6-7", "stroke-width": 1.5 }]
+      ], "draw"),
+      error: () => makeIcon("0 0 16 16", [
+        ["path", { d: "M8 4v4.5", "stroke-width": 1.5 }],
+        ["circle", { cx: 8, cy: 11.8, r: 1.2, fill: "currentColor", stroke: "none" }]
+      ], "shake"),
+      select: () => makeIcon("0 0 16 16", [
+        ["circle", { cx: 8, cy: 8, r: 5, "stroke-width": 1.2 }],
+        ["circle", { cx: 8, cy: 8, r: 1.6, fill: "currentColor", stroke: "none" }],
+        ["path", { d: "M8 0.5v2.5M8 13v2.5M0.5 8h2.5M13 8h2.5", "stroke-width": 1.2 }]
+      ], "pulse"),
+      idle: () => makeIcon("0 0 16 16", [
+        ["rect", { x: 4.5, y: 4.5, width: 7, height: 7, rx: 1, fill: "currentColor", stroke: "none" }]
+      ])
+    };
+    function setToastIcon(type) {
+      toastIcon.replaceChildren();
+      toastIcon.className = "toast-icon " + type;
+      const build = toastIconBuilders[type];
+      if (build) toastIcon.appendChild(build());
+      toast.classList.toggle("is-error", type === "error");
+    }
     function makeLogoIcon() {
+      // WebParser isotype
       const svg = document.createElementNS(SVG_NS, "svg");
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "100%");
-      svg.setAttribute("viewBox", "0 0 193.56 125.26");
+      svg.setAttribute("viewBox", "0 0 189.26 187.34");
       svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-
+      svg.setAttribute("aria-hidden", "true");
       const path = document.createElementNS(SVG_NS, "path");
-      path.setAttribute("d", "M179.64,21.34c-6.18,0-11.41,11.95-13.23,28.48-3.62-23.5-16.98-40.95-32.92-40.95s-29.23,17.35-32.89,40.76C95.74,21.28,75.32,0,50.85,0,22.77,0,0,28.04,0,62.63s22.77,62.63,50.85,62.63c24.47,0,44.89-21.28,49.75-49.63,3.67,23.41,17,40.76,32.89,40.76s29.3-17.45,32.92-40.95c1.82,16.53,7.05,28.48,13.23,28.48,7.68,0,13.91-18.48,13.91-41.28s-6.23-41.28-13.91-41.28Z");
-      path.setAttribute("fill", "#ffffff");
-
+      path.setAttribute("d", "M108.83,160.31l-28.45-.04-.05,27.07H0S.03,0,.03,0h189.18s.05,187.33.05,187.33h-80.42s-.01-27.02-.01-27.02ZM108.82,108.25v29.26s26.65-.02,26.65-.02l.08,22.86,26.63-.05V27.06s-135.06,0-135.06,0v133.29s26.31-.06,26.31-.06l.02-22.79,26.91-.03-.04-29.3,28.49.07Z");
+      path.setAttribute("fill", "#E4E5DE");
       svg.appendChild(path);
       return svg;
     }
-
-    function makeSpinner() {
-      const svg = document.createElementNS(SVG_NS, "svg");
-      svg.setAttribute("width", "14");
-      svg.setAttribute("height", "14");
-      svg.setAttribute("viewBox", "0 0 16 16");
-      svg.classList.add("spinner");
-
-      const track = document.createElementNS(SVG_NS, "circle");
-      track.setAttribute("cx", "8");
-      track.setAttribute("cy", "8");
-      track.setAttribute("r", "6");
-      track.classList.add("spinner-track");
-
-      const head = document.createElementNS(SVG_NS, "circle");
-      head.setAttribute("cx", "8");
-      head.setAttribute("cy", "8");
-      head.setAttribute("r", "6");
-      head.classList.add("spinner-head");
-
-      svg.appendChild(track);
-      svg.appendChild(head);
-      return svg;
-    }
-
-    const iconPaths = {
-      screen: ["M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v7a1.5 1.5 0 0 1-1.5 1.5H9v2h2a.5.5 0 0 1 0 1H5a.5.5 0 0 1 0-1h2v-2H3.5A1.5 1.5 0 0 1 2 10.5v-7ZM3.5 3a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-9Z"],
-      select: ["M3 2a1 1 0 0 0-1 1v2.5a.5.5 0 0 1-1 0V3a2 2 0 0 1 2-2h2.5a.5.5 0 0 1 0 1H3Zm7.5-1a.5.5 0 0 1 .5-.5H13a2 2 0 0 1 2 2v2.5a.5.5 0 0 1-1 0V3a1 1 0 0 0-1-1h-2.5a.5.5 0 0 1-.5-.5ZM1.5 10a.5.5 0 0 1 .5.5V13a1 1 0 0 0 1 1h2.5a.5.5 0 0 1 0 1H3a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5Zm13 0a.5.5 0 0 1 .5.5V13a2 2 0 0 1-2 2h-2.5a.5.5 0 0 1 0-1H13a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 .5-.5Z"],
-      close: ["M3.47 3.47a.75.75 0 0 1 1.06 0L8 6.94l3.47-3.47a.75.75 0 1 1 1.06 1.06L9.06 8l3.47 3.47a.75.75 0 1 1-1.06 1.06L8 9.06l-3.47 3.47a.75.75 0 0 1-1.06-1.06L6.94 8 3.47 4.53a.75.75 0 0 1 0-1.06Z"]
-    };
-
-    const toastIcons = {
-      success: ["M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z"],
-      error: ["M8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"],
-      info: ["M8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"]
-    };
 
     const panel = document.createElement("div");
     panel.className = "panel inner-stroke";
 
     // Logo
-    const logoWrap = document.createElement("div");
+    const logoWrap = document.createElement("a");
     logoWrap.className = "logo-wrap";
+    logoWrap.href = "https://github.com/jdsgnrinfo/webparser-for-figma";
+    logoWrap.target = "_blank";
+    logoWrap.rel = "noopener noreferrer";
+    logoWrap.draggable = false;
+    logoWrap.setAttribute("aria-label", "WebParser for Figma on GitHub");
+    logoWrap.setAttribute("data-tooltip", "GitHub");
     logoWrap.appendChild(makeLogoIcon());
 
     // Controls
@@ -493,12 +477,13 @@
       const btn = document.createElement("button");
       btn.className = "tool-btn";
       btn.setAttribute("data-tooltip", tooltip);
-      btn.appendChild(makeSvg(16, "0 0 16 16", iconPaths[iconKey]));
+      btn.appendChild(keyIcons[iconKey]());
       btn.addEventListener("click", onClick);
       return btn;
     }
 
-    const btnScreen = makeToolBtn("screen", "Entire screen", () => capture("body", true));
+    const btnScreen = makeToolBtn("screen", "Entire screen", () => capture("body"));
+    btnScreen.classList.add("primary");
     const btnClose = makeToolBtn("close", "Close", destroy);
     btnClose.classList.add("close-btn");
 
@@ -526,7 +511,17 @@
     toastAction.style.display = "none";
 
     toast.append(toastIcon, toastText, toastDivider, toastAction);
-    panel.append(logoWrap, controls, toast);
+    // Bottom tab with the grab pill
+    const gripTab = document.createElement("div");
+    gripTab.className = "grip-tab";
+    const grip = document.createElement("button");
+    grip.className = "grip";
+    grip.type = "button";
+    grip.setAttribute("aria-label", "Move toolbar");
+    grip.appendChild(document.createElement("i"));
+    gripTab.appendChild(grip);
+
+    panel.append(logoWrap, controls, gripTab, toast);
     shadow.appendChild(panel);
 
     // Highlight
@@ -535,47 +530,72 @@
     highlight.style.display = "none";
     shadow.appendChild(highlight);
 
-    // Draggable logic
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let panelStartX = 0;
-    let panelStartY = 0;
-    let hasMoved = false;
+    // Draggable logic: the panel is detached from its centering transform (and its
+    // enter animation, which would keep re-applying it) the moment it is grabbed, then
+    // follows the pointer from the exact point where it was picked up.
+    let drag = null;
 
-    panel.addEventListener("mousedown", (e) => {
-      if (e.target.closest("button")) return;
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
+    function detachPanel() {
+      if (panel.classList.contains("dragged")) return;
+      // Grabbed while still appearing: measure its final size, not a scaled frame
+      try {
+        panel.getAnimations().forEach((animation) => animation.finish());
+      } catch (_err) {
+      }
       const rect = panel.getBoundingClientRect();
-      panelStartX = rect.left;
-      panelStartY = rect.top;
+      panel.style.animation = "none";
+      panel.style.opacity = "1";
+      panel.style.transform = "none";
+      panel.style.left = rect.left + "px";
+      panel.style.top = rect.top + "px";
+      panel.classList.add("dragged");
+    }
+
+    grip.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      // Keep the exact point that was grabbed under the pointer, even if the panel
+      // was still scaled by its enter animation when it was picked up
+      const seen = panel.getBoundingClientRect();
+      detachPanel();
+      const rect = panel.getBoundingClientRect();
+      const offsetX = (e.clientX - seen.left) * (rect.width / (seen.width || rect.width));
+      const offsetY = (e.clientY - seen.top) * (rect.height / (seen.height || rect.height));
+      panel.style.left = e.clientX - offsetX + "px";
+      panel.style.top = e.clientY - offsetY + "px";
+      // The tab hangs below the panel: keep it on screen too
+      drag = { id: e.pointerId, offsetX, offsetY, width: rect.width, height: rect.height + gripTab.offsetHeight - 1 };
+      grip.setPointerCapture(e.pointerId);
+      grip.classList.add("grabbing");
       e.preventDefault();
     });
 
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-      const newX = panelStartX + dx;
-      const newY = panelStartY + dy;
-      if (!hasMoved) {
-        hasMoved = true;
-        panel.style.transform = "none";
-      }
-      panel.style.left = newX + "px";
-      panel.style.top = newY + "px";
+    grip.addEventListener("pointermove", (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const maxX = Math.max(0, window.innerWidth - drag.width);
+      const maxY = Math.max(0, window.innerHeight - drag.height);
+      const x = Math.min(Math.max(e.clientX - drag.offsetX, 0), maxX);
+      const y = Math.min(Math.max(e.clientY - drag.offsetY, 0), maxY);
+      panel.style.left = x + "px";
+      panel.style.top = y + "px";
     });
 
-    document.addEventListener("mouseup", () => {
-      isDragging = false;
-    });
+    function endDrag(e) {
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      try {
+        grip.releasePointerCapture(drag.id);
+      } catch (_err) {
+      }
+      drag = null;
+      grip.classList.remove("grabbing");
+    }
+    grip.addEventListener("pointerup", endDrag);
+    grip.addEventListener("pointercancel", endDrag);
+    grip.addEventListener("lostpointercapture", endDrag);
 
     let captureAborted = false;
     let stopTimer = null;
 
-    async function capture(selector, autoDestroy = true) {
+    async function capture(selector) {
       if (!window.figma?.capturePage) {
         showStatus("Error: capture script not loaded", "error");
         return;
@@ -586,8 +606,8 @@
       showStatus("Capturing...", "info", "Stop", () => {
         captureAborted = true;
         clearStopTimer();
-        hideStatus();
         setLoading(false);
+        flashStatus("Capture cancelled");
       });
 
       stopTimer = setTimeout(() => {}, 5e3);
@@ -617,15 +637,21 @@
         } else {
           await window.figma.writeToClipboard(json);
         }
+        setLoading(false);
         showStatus("Copied to clipboard", "success");
+        // The toolbar stays open: it only closes with the close button, Esc, or
+        // after a few minutes without use
         setTimeout(() => {
-          if (captureAborted) return;
+          if (captureAborted || busy) return;
           showStatus("Now paste into Figma canvas", "success");
-          if (autoDestroy) setTimeout(destroy, 3e3);
-        }, 3e3);
+          setTimeout(() => {
+            if (currentToastType === "success" && !busy) hideStatus();
+          }, 4e3);
+        }, 2500);
       } catch (err) {
         if (!captureAborted) {
-          showStatus("Error: " + (err.message || String(err)), "error");
+          const retry = selector === "body" ? () => setTimeout(() => capture(selector), 400) : null;
+          showStatus("Error: " + (err.message || String(err)), "error", retry ? "Retry" : null, retry);
         }
         ffClipboard?.reject(err);
         setLoading(false);
@@ -673,14 +699,7 @@
         currentToastType = type;
         toastText.textContent = text;
 
-        toastIcon.replaceChildren();
-        toastIcon.className = "toast-icon " + type;
-        if (type === "info") {
-          toastIcon.appendChild(makeSpinner());
-        } else if (toastIcons[type]) {
-          const svg = makeSvg(12, "0 0 16 16", toastIcons[type]);
-          toastIcon.appendChild(svg);
-        }
+        setToastIcon(type);
 
         toast.classList.add("visible");
         return;
@@ -700,14 +719,7 @@
         setTimeout(() => {
           toastText.textContent = text;
 
-          toastIcon.replaceChildren();
-          toastIcon.className = "toast-icon " + type;
-          if (type === "info") {
-            toastIcon.appendChild(makeSpinner());
-          } else if (toastIcons[type]) {
-            const svg = makeSvg(12, "0 0 16 16", toastIcons[type]);
-            toastIcon.appendChild(svg);
-          }
+          setToastIcon(type);
 
           void toast.offsetWidth;
           toast.classList.add("visible");
@@ -726,7 +738,10 @@
       }, 350);
     }
 
+    let busy = false;
     function setLoading(loading) {
+      busy = loading;
+      bumpIdle();
       btnScreen.classList.toggle("disabled", loading);
       btnSelect.classList.toggle("disabled", loading);
     }
@@ -736,17 +751,23 @@
 
     function toggleSelection() {
       if (selecting) {
-        stopSelection();
-        hideStatus();
+        cancelSelection();
       } else {
         startSelection();
       }
+    }
+
+    function cancelSelection() {
+      if (!selecting) return;
+      stopSelection();
+      flashStatus("Selection cancelled");
     }
 
     function startSelection() {
       if (selecting) return;
       selecting = true;
       btnSelect.classList.add("active");
+      showStatus("Click an element to capture", "select", "Cancel", () => cancelSelection());
       document.addEventListener("mousemove", onSelectionMove, true);
       document.addEventListener("click", onSelectionClick, true);
       document.addEventListener("keydown", onSelectionKey, true);
@@ -765,7 +786,16 @@
       document.removeEventListener("keydown", onSelectionKey, true);
     }
 
+    function isOwnUI(e) {
+      return typeof e.composedPath === "function" && e.composedPath().includes(host);
+    }
+
     function onSelectionMove(e) {
+      if (isOwnUI(e)) {
+        highlight.classList.remove("visible");
+        selectedEl = null;
+        return;
+      }
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (!el || el === host) return;
       selectedEl = el;
@@ -780,6 +810,8 @@
     }
 
     function onSelectionClick(e) {
+      // A click on the toolbar or its toast (Cancel, Close...) is handled by them
+      if (isOwnUI(e)) return;
       e.preventDefault();
       e.stopPropagation();
       const el = selectedEl;
@@ -797,13 +829,46 @@
 
     function onSelectionKey(e) {
       if (e.key === "Escape") {
-        stopSelection();
-        hideStatus();
+        // Esc cancels the selection only; it must not also close the toolbar
+        e.stopPropagation();
+        cancelSelection();
       }
     }
 
+    // Shows a neutral state (cancelled) briefly. Waits for a toast that is being
+    // hidden by its action button to finish, so the new text is not wiped.
+    function flashStatus(text) {
+      setTimeout(() => {
+        showStatus(text, "idle");
+        setTimeout(() => {
+          if (currentToastType === "idle") hideStatus();
+        }, 1800);
+      }, 400);
+    }
+
+    // Closes by itself only after a few minutes without any use
+    const IDLE_CLOSE_MS = 3 * 60 * 1000;
+    let idleTimer = null;
+    let destroyed = false;
+    function bumpIdle() {
+      if (destroyed) return;
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        if (busy || selecting) bumpIdle();
+        else destroy();
+      }, IDLE_CLOSE_MS);
+    }
+    panel.addEventListener("pointermove", bumpIdle, { passive: true });
+    panel.addEventListener("pointerdown", bumpIdle, { passive: true });
+    bumpIdle();
+
     function destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      clearTimeout(idleTimer);
       stopSelection();
+      // A moved panel had its animation switched off inline; let the exit one run
+      if (panel.classList.contains("dragged")) panel.style.animation = "";
       panel.classList.add("exiting");
       setTimeout(() => {
         host.remove();

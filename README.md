@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="WebParser for Figma: captura cualquier web y pégala en Figma como capas editables" width="100%">
+</p>
+
 # WebParser for Figma
 
 ## Que hace
@@ -49,14 +53,30 @@ Los datos serializados se codifican en un formato propietario compatible con el 
 
 ## Uso
 
+<p align="center">
+  <img src="docs/how-it-works.svg" alt="Cómo funciona: abre la barra, captura y pega en Figma" width="100%">
+</p>
+
 1. Navega a la pagina web que deseas capturar.
 2. Haz clic en el icono de **WebParser for Figma** en la barra de extensiones.
 3. Aparecera una barra flotante con dos opciones:
-   - **Entire screen**: captura el `<body>` completo.
+   - **Entire screen** (tecla naranja): captura la pagina completa.
    - **Select element**: activa el modo de seleccion para capturar un solo elemento (hover + clic).
 4. Espera a que el proceso termine. El mensaje *"Copied to clipboard"* confirmara que esta listo.
 5. Abre **Figma**, selecciona el canvas y pega (`Ctrl+V` / `Cmd+V`).
 6. La pagina aparecera como un grupo de capas vectoriales y rasterizadas, listas para editar.
+
+**Detalles de la barra:**
+- **Moverla:** arrastra desde la pestaña inferior (la pildora). El resto de la barra no se arrastra, para evitar movimientos accidentales.
+- **Cancelar:** *Stop* durante una captura, o *Cancel* / `Esc` en el modo seleccion. No se copia nada y la barra sigue abierta.
+- **Sigue abierta** despues de cada captura para que puedas hacer otra. Se cierra con el boton de cerrar, con `Esc` o tras 3 minutos sin usarla.
+- **El logo** abre este repositorio en GitHub.
+
+### Estados de la barra
+
+<p align="center">
+  <img src="docs/states.svg" alt="Estados de la barra: capturando, seleccionando, copiado y error" width="100%">
+</p>
 
 ---
 
@@ -82,6 +102,9 @@ webparser-for-figma/
 |-- toolbar.js             # UI flotante (interfaz de usuario)
 |-- assets/
 |   |-- icon-*.png         # Iconos de la extension
+|-- docs/
+|   |-- *.svg              # Visuales del README
+|   |-- brand/             # Logotipo, isotipo e icono
 ```
 
 ### Tecnologias clave
